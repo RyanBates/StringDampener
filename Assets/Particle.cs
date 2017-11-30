@@ -1,8 +1,13 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 
+        
+        
 namespace HooksLaw
 {
+   
+
     public class Particle
     {
         public Vector3 force;
@@ -48,43 +53,53 @@ namespace HooksLaw
 
     public class SpringDamper
     {
+        ParticleBehaviour pb;
+
         Particle _P1, _P2;
         float _Ks;
         float _Lo;
+        float _Kd;
+
+        public List<Particle> m_Particle;
 
         public SpringDamper()
         {
 
         }
 
-        public SpringDamper(Particle p1, Particle p2, float springConstant, float restLength)
+        public SpringDamper(Particle p1, Particle p2, float springConstant, float dampingFactor, float restLength)
         {
             _P1 = p1;
             _P2 = p2;
             _Ks = springConstant;
+            _Kd = dampingFactor;
             _Lo = restLength;
         }
-
-        public float Spring(float springConstant)
+        
+        public void CalculateForce()
         {
-            _Ks = springConstant;
+            m_Particle.Add(_P1);
+            m_Particle.Add(_P2);
 
-            return _Ks;
-        }
+            //Convert 3D to 1D
+            Vector3 e = _P1.position - _P2.position;
+            float l = Vector3.Magnitude(e);
+            Vector3 E = e.normalized / l;
 
-        public float Rest(float restLength)
-        { 
-            _Lo = restLength;
+            //Calculating 1D Velocities
+            Vector3 v1 = _P1.velocity;
+            Vector3 v2 = _P2.velocity;
 
-            return _Lo;
-        }
+            float V1 = Vector3.Dot(E, v1);
+            float V2 = Vector3.Dot(E, v2);
 
-        public Vector3 Span()
-        {
-            _P1.position = _P1.position / Spring(5);
-            _P1.position.y = Rest(5);
+            //Convert 1D to 3D
+            float Fsd = -_Ks * (_Lo - l) - _Kd * (V1 - V2);
+            Vector3 F1 = Fsd * E;
+            Vector3 F2 = -F1;
 
-            return _P1.position;           
+            m_Particle[0].AddForce(F1);
+            m_Particle[1].AddForce(F2);
         }
     }
 }
